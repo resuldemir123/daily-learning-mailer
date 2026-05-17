@@ -1,0 +1,15 @@
+{
+  "name": "daily-learning-mailer",
+  "version": "1.0.0",
+  "description": "Claude API ile günlük öğrenme maili gönderir",
+  "type": "module",
+  "main": "src/mailer.js",
+  "scripts": {
+    "start": "node src/mailer.js",
+    "test": "node src/mailer.js"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.39.0",
+    "resend": "^4.0.0"
+  }
+}
