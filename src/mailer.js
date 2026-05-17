@@ -1,17 +1,15 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { Resend } from "resend";
+import { GoogleGenerativeAI } from "@google/generative-ai";
+import nodemailer from "nodemailer";
 
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const TOPIC = process.env.LEARNING_TOPIC || "JavaScript";
-const TO_EMAIL = process.env.TO_EMAIL;
-const FROM_EMAIL = process.env.FROM_EMAIL || "learning@yourdomain.com";
-
-// Konuları sırayla göndermek istersen topics.json'dan okuyabilirsin.
-// Şimdilik Claude rastgele ilgi çekici bir alt konu seçiyor.
+const TOPIC      = process.env.LEARNING_TOPIC  || "JavaScript";
+const TO_EMAIL   = process.env.TO_EMAIL;         // mailin gideceği adres
+const FROM_EMAIL = process.env.GMAIL_USER;       // gmail adresin
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function generateLesson() {
-  const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
   const today = new Date().toLocaleDateString("tr-TR", {
     weekday: "long",
@@ -20,38 +18,38 @@ async function generateLesson() {
     day: "numeric",
   });
 
-  const message = await client.messages.create({
-    model: "claude-sonnet-4-20250514",
-    max_tokens: 1500,
-    messages: [
-      {
-        role: "user",
-        content: `Sen bir ${TOPIC} eğitmenisin. Bugün (${today}) öğrencine günlük bir ders e-postası yazacaksın.
+  const prompt = `Sen bir ${TOPIC} eğitmenisin. Bugün (${today}) öğrencine günlük bir ders e-postası yazacaksın.
 
-Şu formatta HTML e-posta içeriği üret (sadece <body> içindekiler, tam HTML dökümanı değil):
+Şu formatta HTML e-posta içeriği üret (sadece body içindekiler, tam HTML dökümanı değil):
 
 1. Bugünün konusu: ${TOPIC} ile ilgili ilginç, pratik bir alt konu seç
 2. 2-3 paragraf açıklama (Türkçe, sade dil)
-3. Somut bir kod örneği (varsa) <pre><code> içinde
+3. Somut bir kod örneği (varsa) pre ve code tagları içinde
 4. "Bugünün görevi": Okuyucunun 10 dakikada uygulayabileceği pratik bir egzersiz
 5. Motivasyon cümlesi
 
-HTML stilini inline css ile yap, arka plan beyaz, font sans-serif, kod blokları açık gri arka planlı olsun. Profesyonel ama samimi bir ton kullan.`,
-      },
-    ],
-  });
+HTML stilini inline css ile yap, arka plan beyaz, font sans-serif, kod blokları açık gri arka planlı olsun. Profesyonel ama samimi bir ton kullan.`;
+
+  const result = await model.generateContent(prompt);
+  const html   = result.response.text();
 
   return {
     subject: `📚 Günlük ${TOPIC} Dersin - ${today}`,
-    html: message.content[0].text,
+    html,
   };
 }
 
 async function sendEmail(subject, html) {
-  const resend = new Resend(process.env.RESEND_API_KEY);
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD, // Gmail uygulama şifresi (normal şifre değil!)
+    },
+  });
 
-  const { data, error } = await resend.emails.send({
-    from: FROM_EMAIL,
+  const mailOptions = {
+    from: `"Günlük Öğrenme 📚" <${FROM_EMAIL}>`,
     to: TO_EMAIL,
     subject,
     html: `
@@ -64,11 +62,11 @@ async function sendEmail(subject, html) {
       </head>
       <body style="margin:0;padding:0;background:#f5f5f5;font-family:sans-serif;">
         <div style="max-width:640px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-          
+
           <!-- HEADER -->
           <div style="background:#1a1a2e;padding:28px 32px;text-align:center;">
             <p style="margin:0;color:#a0a8c8;font-size:13px;letter-spacing:2px;text-transform:uppercase;">Günlük Öğrenme</p>
-            <h1 style="margin:8px 0 0;color:#fff;font-size:24px;font-weight:700;">${process.env.LEARNING_TOPIC || "JavaScript"}</h1>
+            <h1 style="margin:8px 0 0;color:#fff;font-size:24px;font-weight:700;">${TOPIC}</h1>
           </div>
 
           <!-- CONTENT -->
@@ -84,16 +82,16 @@ async function sendEmail(subject, html) {
       </body>
       </html>
     `,
-  });
+  };
 
-  if (error) throw new Error(`Mail gönderilemedi: ${JSON.stringify(error)}`);
-  console.log("✅ Mail gönderildi:", data.id);
+  const info = await transporter.sendMail(mailOptions);
+  console.log("✅ Mail gönderildi:", info.messageId);
 }
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 async function main() {
   console.log(`🎯 Konu: ${TOPIC}`);
-  console.log("🤖 Claude ile ders oluşturuluyor...");
+  console.log("🤖 Gemini ile ders oluşturuluyor...");
 
   const { subject, html } = await generateLesson();
   console.log("✍️  Ders oluşturuldu:", subject);

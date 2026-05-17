@@ -42,11 +42,17 @@ Repo → Settings → Secrets and variables → Actions → New repository secre
 
 | Secret Adı | Değer |
 |------------|-------|
-| `ANTHROPIC_API_KEY` | `sk-ant-...` |
-| `RESEND_API_KEY` | `re_...` |
-| `TO_EMAIL` | `senin@email.com` |
-| `FROM_EMAIL` | `learning@domainin.com` |
+| `GEMINI_API_KEY` | Google AI Studio'dan |
+| `GMAIL_USER` | senin@gmail.com |
+| `GMAIL_APP_PASSWORD` | Gmail uygulama şifresi (aşağıda açıklandı) |
+| `TO_EMAIL` | mailin geleceği adres |
 | `LEARNING_TOPIC` | `JavaScript` (veya Python, React, SQL...) |
+
+### Gmail Uygulama Şifresi Nasıl Alınır?
+1. Google hesabında **2 adımlı doğrulama** açık olmalı
+2. [myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords) adresine git
+3. "Uygulama seç" → "Diğer" → `daily-mailer` yaz → **Oluştur**
+4. Çıkan 16 haneli şifreyi `GMAIL_APP_PASSWORD` olarak kaydet
 
 ### 5. Workflow'u aktif et
 
