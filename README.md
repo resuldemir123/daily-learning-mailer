@@ -86,4 +86,4 @@ Actions → Daily Learning Mailer → Run workflow → Run
 
 `LEARNING_TOPIC` secret'ını güncelle → Bir sonraki gönderimde yeni konu aktif olur.
 
-Örnek konular: `Python`, `React`, `SQL`, `Docker`, `System Design`, `TypeScript`, `AWS`
+Örnek konular: `Python`, `React`, `SQL`, `Docker`, `System Design`, `TypeScript`, `AWS` 
