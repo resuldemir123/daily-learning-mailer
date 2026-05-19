@@ -37,4 +37,5 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           TO_EMAIL: ${{ secrets.TO_EMAIL }}
           LEARNING_TOPIC: ${{ github.event.inputs.topic || secrets.LEARNING_TOPIC }}
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         run: node src/mailer.js

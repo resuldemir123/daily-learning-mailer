@@ -8,17 +8,18 @@ const FROM_EMAIL = process.env.GMAIL_USER;       // gmail adresin
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function generateLesson() {
-  const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-  const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+  try {
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-  const today = new Date().toLocaleDateString("tr-TR", {
-    weekday: "long",
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+    const today = new Date().toLocaleDateString("tr-TR", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
 
-  const prompt = `Sen bir ${TOPIC} eğitmenisin. Bugün (${today}) öğrencine günlük bir ders e-postası yazacaksın.
+    const prompt = `Sen bir ${TOPIC} eğitmenisin. Bugün (${today}) öğrencine günlük bir ders e-postası yazacaksın.
 
 Şu formatta HTML e-posta içeriği üret (sadece body içindekiler, tam HTML dökümanı değil):
 
@@ -30,62 +31,71 @@ async function generateLesson() {
 
 HTML stilini inline css ile yap, arka plan beyaz, font sans-serif, kod blokları açık gri arka planlı olsun. Profesyonel ama samimi bir ton kullan.`;
 
-  const result = await model.generateContent(prompt);
-  const html   = result.response.text();
+    const result = await model.generateContent(prompt);
+    const html   = result.response.text();
 
-  return {
-    subject: `📚 Günlük ${TOPIC} Dersin - ${today}`,
-    html,
-  };
+    return {
+      subject: `📚 Günlük ${TOPIC} Dersin - ${today}`,
+      html,
+    };
+  } catch (error) {
+    console.error("❌ generateLesson Hatası:", error.message);
+    throw error;
+  }
 }
 
 async function sendEmail(subject, html) {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD, // Gmail uygulama şifresi (normal şifre değil!)
-    },
-  });
+  try {
+    const transporter = nodemailer.createTransport({
+      service: "gmail",
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_APP_PASSWORD, // Gmail uygulama şifresi (normal şifre değil!)
+      },
+    });
 
-  const mailOptions = {
-    from: `"Günlük Öğrenme 📚" <${FROM_EMAIL}>`,
-    to: TO_EMAIL,
-    subject,
-    html: `
-      <!DOCTYPE html>
-      <html lang="tr">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${subject}</title>
-      </head>
-      <body style="margin:0;padding:0;background:#f5f5f5;font-family:sans-serif;">
-        <div style="max-width:640px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+    const mailOptions = {
+      from: `"Günlük Öğrenme 📚" <${FROM_EMAIL}>`,
+      to: TO_EMAIL,
+      subject,
+      html: `
+        <!DOCTYPE html>
+        <html lang="tr">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${subject}</title>
+        </head>
+        <body style="margin:0;padding:0;background:#f5f5f5;font-family:sans-serif;">
+          <div style="max-width:640px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
 
-          <!-- HEADER -->
-          <div style="background:#1a1a2e;padding:28px 32px;text-align:center;">
-            <p style="margin:0;color:#a0a8c8;font-size:13px;letter-spacing:2px;text-transform:uppercase;">Günlük Öğrenme</p>
-            <h1 style="margin:8px 0 0;color:#fff;font-size:24px;font-weight:700;">${TOPIC}</h1>
+            <!-- HEADER -->
+            <div style="background:#1a1a2e;padding:28px 32px;text-align:center;">
+              <p style="margin:0;color:#a0a8c8;font-size:13px;letter-spacing:2px;text-transform:uppercase;">Günlük Öğrenme</p>
+              <h1 style="margin:8px 0 0;color:#fff;font-size:24px;font-weight:700;">${TOPIC}</h1>
+            </div>
+
+            <!-- CONTENT -->
+            <div style="padding:32px;">
+              ${html}
+            </div>
+
+            <!-- FOOTER -->
+            <div style="padding:20px 32px;background:#f9f9f9;border-top:1px solid #eee;text-align:center;">
+              <p style="margin:0;color:#999;font-size:12px;">Bu mail otomatik olarak gönderilmiştir. Her gün yeni bir ders seni bekliyor 🚀</p>
+            </div>
           </div>
+        </body>
+        </html>
+      `,
+    };
 
-          <!-- CONTENT -->
-          <div style="padding:32px;">
-            ${html}
-          </div>
-
-          <!-- FOOTER -->
-          <div style="padding:20px 32px;background:#f9f9f9;border-top:1px solid #eee;text-align:center;">
-            <p style="margin:0;color:#999;font-size:12px;">Bu mail otomatik olarak gönderilmiştir. Her gün yeni bir ders seni bekliyor 🚀</p>
-          </div>
-        </div>
-      </body>
-      </html>
-    `,
-  };
-
-  const info = await transporter.sendMail(mailOptions);
-  console.log("✅ Mail gönderildi:", info.messageId);
+    const info = await transporter.sendMail(mailOptions);
+    console.log("✅ Mail gönderildi:", info.messageId);
+  } catch (error) {
+    console.error("❌ sendEmail Hatası:", error.message);
+    throw error;
+  }
 }
 
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
