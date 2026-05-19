@@ -1,121 +1,131 @@
+import dotenv from "dotenv";
+dotenv.config();
+
+import Groq from "groq-sdk";
 import nodemailer from "nodemailer";
-import OpenAI from "openai";
 
-// ─── CONFIG ───────────────────────────────────────────────────────────────────
-const { TO_EMAIL, GMAIL_USER, GEMINI_API_KEY, LEARNING_TOPIC } = process.env;
-const TOPIC      = LEARNING_TOPIC  || "JavaScript";
-const FROM_EMAIL = GMAIL_USER;       // gmail adresin
-// ─────────────────────────────────────────────────────────────────────────────
+// ─── ENV ─────────────────────────────────────────────
+const {
+  GROQ_API_KEY,
+  TO_EMAIL,
+  GMAIL_USER,
+  GMAIL_APP_PASSWORD,
+  LEARNING_TOPIC,
+} = process.env;
 
-async function generateLesson() {
-  try {
-    const openai = new OpenAI({
-      apiKey: process.env.OPENAI_API_KEY,
-    });
+if (!GROQ_API_KEY) throw new Error("❌ GROQ_API_KEY eksik!");
+if (!TO_EMAIL || !GMAIL_USER || !GMAIL_APP_PASSWORD)
+  throw new Error("❌ Gmail config eksik!");
 
-    const today = new Date().toLocaleDateString("tr-TR", {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
+const TOPIC = LEARNING_TOPIC || "JavaScript";
+const FROM_EMAIL = GMAIL_USER;
 
-    const prompt = `Sen bir ${TOPIC} eğitmenisin. Bugün (${today}) öğrencine günlük bir ders e-postası yazacaksın.
-
-Şu formatta HTML e-posta içeriği üret (sadece body içindekiler, tam HTML dökümanı değil):
-
-1. Bugünün konusu: ${TOPIC} ile ilgili ilginç, pratik bir alt konu seç
-2. 2-3 paragraf açıklama (Türkçe, sade dil)
-3. Somut bir kod örneği (varsa) pre ve code tagları içinde
-4. "Bugünün görevi": Okuyucunun 10 dakikada uygulayabileceği pratik bir egzersiz
-5. Motivasyon cümlesi
-
-HTML stilini inline css ile yap, arka plan beyaz, font sans-serif, kod blokları açık gri arka planlı olsun. Profesyonel ama samimi bir ton kullan.`;
-
-    const response = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
-    });
-
-    const html = response.choices[0].message.content;
-
-    return {
-      subject: `📚 Günlük ${TOPIC} Dersin - ${today}`,
-      html,
-    };
-  } catch (error) {
-    console.error("❌ generateLesson Hatası:", error.message);
-    throw error;
-  }
-}
-
-async function sendEmail(subject, html) {
-  try {
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_APP_PASSWORD, // Gmail uygulama şifresi (normal şifre değil!)
-      },
-    });
-
-    const mailOptions = {
-      from: `"Günlük Öğrenme 📚" <${FROM_EMAIL}>`,
-      to: TO_EMAIL,
-      subject,
-      html: `
-        <!DOCTYPE html>
-        <html lang="tr">
-        <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${subject}</title>
-        </head>
-        <body style="margin:0;padding:0;background:#f5f5f5;font-family:sans-serif;">
-          <div style="max-width:640px;margin:32px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-
-            <!-- HEADER -->
-            <div style="background:#1a1a2e;padding:28px 32px;text-align:center;">
-              <p style="margin:0;color:#a0a8c8;font-size:13px;letter-spacing:2px;text-transform:uppercase;">Günlük Öğrenme</p>
-              <h1 style="margin:8px 0 0;color:#fff;font-size:24px;font-weight:700;">${TOPIC}</h1>
-            </div>
-
-            <!-- CONTENT -->
-            <div style="padding:32px;">
-              ${html}
-            </div>
-
-            <!-- FOOTER -->
-            <div style="padding:20px 32px;background:#f9f9f9;border-top:1px solid #eee;text-align:center;">
-              <p style="margin:0;color:#999;font-size:12px;">Bu mail otomatik olarak gönderilmiştir. Her gün yeni bir ders seni bekliyor 🚀</p>
-            </div>
-          </div>
-        </body>
-        </html>
-      `,
-    };
-
-    const info = await transporter.sendMail(mailOptions);
-    console.log("✅ Mail gönderildi:", info.messageId);
-  } catch (error) {
-    console.error("❌ sendEmail Hatası:", error.message);
-    throw error;
-  }
-}
-
-// ─── MAIN ─────────────────────────────────────────────────────────────────────
-async function main() {
-  console.log(`🎯 Konu: ${TOPIC}`);
-  console.log("🤖 OpenAI ile ders oluşturuluyor...");
-
-  const { subject, html } = await generateLesson();
-  console.log("✍️  Ders oluşturuldu:", subject);
-
-  console.log("📨 Mail gönderiliyor...");
-  await sendEmail(subject, html);
-}
-
-main().catch((err) => {
-  console.error("❌ Hata:", err.message);
-  process.exit(1);
+// ─── GROQ ───────────────────────────────────────────
+const groq = new Groq({
+  apiKey: GROQ_API_KEY,
 });
+
+// ─── LESSON GENERATOR ───────────────────────────────
+async function generateLesson() {
+  const today = new Date().toLocaleDateString("tr-TR", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const prompt = `
+Sen profesyonel bir JavaScript eğitmenisin.
+
+🚨 KURALLAR:
+- SADECE JavaScript anlat
+- Konu dışına ASLA çıkma
+- Uydurma teknik terim kullanma
+- Türkçe sade anlatım
+
+Bugünün konusu: ${TOPIC}
+
+Bugün (${today}) öğrenciye günlük ders e-postası yaz.
+
+📌 FORMAT:
+- HTML body
+- 2-3 kısa paragraf açıklama
+- gerçek JavaScript kod örneği
+- mini görev
+- motivasyon
+
+⚠️ SADECE HTML döndür. Açıklama yazma.
+`;
+
+  const response = await groq.chat.completions.create({
+    model: "llama-3.1-8b-instant",
+    messages: [{ role: "user", content: prompt }],
+    temperature: 0.5,
+    max_tokens: 1000,
+  });
+
+  let html = response?.choices?.[0]?.message?.content || "";
+
+  // 🧼 temizleme
+  html = html
+    .replace(/```html/g, "")
+    .replace(/```/g, "")
+    .trim();
+
+  if (!html) {
+    throw new Error("❌ Model boş içerik döndürdü!");
+  }
+
+  console.log("📄 HTML GENERATED:\n", html);
+
+  return {
+    subject: `📚 Günlük ${TOPIC} Dersi - ${today}`,
+    html,
+  };
+}
+
+// ─── EMAIL ───────────────────────────────────────────
+async function sendEmail(subject, html) {
+  const transporter = nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: GMAIL_USER,
+      pass: GMAIL_APP_PASSWORD,
+    },
+  });
+
+  await transporter.sendMail({
+    from: `"Günlük Öğrenme 📚" <${FROM_EMAIL}>`,
+    to: TO_EMAIL,
+    subject,
+    html: `
+      <div style="font-family:Arial;background:#f6f6f6;padding:20px;">
+        <div style="max-width:600px;margin:auto;background:#fff;padding:20px;border-radius:12px;">
+          ${html}
+        </div>
+      </div>
+    `,
+  });
+
+  console.log("✅ Mail gönderildi");
+}
+
+// ─── MAIN ────────────────────────────────────────────
+async function main() {
+  try {
+    console.log(`🎯 Konu: ${TOPIC}`);
+    console.log("🤖 Ders oluşturuluyor...");
+
+    const { subject, html } = await generateLesson();
+
+    console.log("✍️ Ders hazır:", subject);
+    console.log("📨 Mail gönderiliyor...");
+
+    await sendEmail(subject, html);
+  } catch (err) {
+    console.error("❌ Sistem Hatası:", err.message);
+    process.exit(1);
+  }
+}
+
+main();

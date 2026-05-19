@@ -27,6 +27,18 @@ jobs:
       - name: Bağımlılıkları yükle
         run: npm install
 
+      # 🔍 DEBUG (GEÇİCİ - HATA BULMAK İÇİN)
+      - name: Debug OpenAI Key
+        run: |
+          if [ -z "$OPENAI_API_KEY" ]; then
+            echo "❌ OPENAI_API_KEY YOK"
+            exit 1
+          else
+            echo "✅ OPENAI API KEY VAR"
+          fi
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+
       - name: Günlük dersi gönder
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
