@@ -2,14 +2,12 @@ name: Daily Learning Mailer
 
 on:
   schedule:
-    # Her gün sabah 08:00 İstanbul saati = 05:00 UTC
     - cron: "0 5 * * *"
 
-  # Elle de tetikleyebilmek için:
   workflow_dispatch:
     inputs:
       topic:
-        description: "Öğrenmek istediğin konu (boş bırakırsan varsayılan kullanılır)"
+        description: "Öğrenmek istediğin konu"
         required: false
         default: ""
 
@@ -24,18 +22,17 @@ jobs:
       - name: Node.js kur
         uses: actions/setup-node@v5
         with:
-          node-version: "24"
-          cache: "npm"
+          node-version: "20"
 
       - name: Bağımlılıkları yükle
-        run: npm ci
+        run: npm install
 
       - name: Günlük dersi gönder
         env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           TO_EMAIL: ${{ secrets.TO_EMAIL }}
           LEARNING_TOPIC: ${{ github.event.inputs.topic || secrets.LEARNING_TOPIC }}
-          FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
         run: node src/mailer.js

@@ -1,16 +1,17 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import nodemailer from "nodemailer";
-gemini-1.5-pro
+import OpenAI from "openai";
+
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
-const TOPIC      = process.env.LEARNING_TOPIC  || "JavaScript";
-const TO_EMAIL   = process.env.TO_EMAIL;         // mailin gideceği adres
-const FROM_EMAIL = process.env.GMAIL_USER;       // gmail adresin
+const { TO_EMAIL, GMAIL_USER, GEMINI_API_KEY, LEARNING_TOPIC } = process.env;
+const TOPIC      = LEARNING_TOPIC  || "JavaScript";
+const FROM_EMAIL = GMAIL_USER;       // gmail adresin
 // ─────────────────────────────────────────────────────────────────────────────
 
 async function generateLesson() {
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-3.0" });
+    const openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
 
     const today = new Date().toLocaleDateString("tr-TR", {
       weekday: "long",
@@ -31,8 +32,12 @@ async function generateLesson() {
 
 HTML stilini inline css ile yap, arka plan beyaz, font sans-serif, kod blokları açık gri arka planlı olsun. Profesyonel ama samimi bir ton kullan.`;
 
-    const result = await model.generateContent(prompt);
-    const html   = result.response.text();
+    const response = await openai.chat.completions.create({
+      model: "gpt-4",
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const html = response.choices[0].message.content;
 
     return {
       subject: `📚 Günlük ${TOPIC} Dersin - ${today}`,
@@ -101,7 +106,7 @@ async function sendEmail(subject, html) {
 // ─── MAIN ─────────────────────────────────────────────────────────────────────
 async function main() {
   console.log(`🎯 Konu: ${TOPIC}`);
-  console.log("🤖 Gemini ile ders oluşturuluyor...");
+  console.log("🤖 OpenAI ile ders oluşturuluyor...");
 
   const { subject, html } = await generateLesson();
   console.log("✍️  Ders oluşturuldu:", subject);
