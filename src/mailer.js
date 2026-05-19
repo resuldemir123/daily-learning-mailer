@@ -1,6 +1,6 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import nodemailer from "nodemailer";
-
+gemini-1.5-pro
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 const TOPIC      = process.env.LEARNING_TOPIC  || "JavaScript";
 const TO_EMAIL   = process.env.TO_EMAIL;         // mailin gideceği adres
