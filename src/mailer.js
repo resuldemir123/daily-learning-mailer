@@ -10,7 +10,7 @@ const FROM_EMAIL = process.env.GMAIL_USER;       // gmail adresin
 async function generateLesson() {
   try {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
     const today = new Date().toLocaleDateString("tr-TR", {
       weekday: "long",
