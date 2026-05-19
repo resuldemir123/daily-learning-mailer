@@ -17,31 +17,31 @@ jobs:
 
     steps:
       - name: Repo'yu çek
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Node.js kur
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v4
         with:
           node-version: "20"
 
       - name: Bağımlılıkları yükle
         run: npm install
 
-      # 🔍 DEBUG (GEÇİCİ - HATA BULMAK İÇİN)
-      - name: Debug OpenAI Key
+      # 🔍 DEBUG (Groq kontrol)
+      - name: Debug Groq Key
         run: |
-          if [ -z "$OPENAI_API_KEY" ]; then
-            echo "❌ OPENAI_API_KEY YOK"
+          if [ -z "$GROQ_API_KEY" ]; then
+            echo "❌ GROQ_API_KEY YOK"
             exit 1
           else
-            echo "✅ OPENAI API KEY VAR"
+            echo "✅ GROQ API KEY VAR"
           fi
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
 
       - name: Günlük dersi gönder
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
